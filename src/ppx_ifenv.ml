@@ -21,7 +21,7 @@ let ifenv_mapper argv =
                   Pstr_eval ({ pexp_loc  = loc;
                                pexp_desc = Pexp_ifthenelse (cond, thenClause, elseOption) }, _) }] ->
           (* Replace with a constant string with the value from the environment. *)
-          Exp.constant ~loc (Const_string ("BLARG", None))
+          thenClause
         | _ ->
           raise (Location.Error (
                   Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1"))
