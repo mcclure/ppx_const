@@ -19,10 +19,17 @@ let ifenv_mapper argv =
         | (* Should have a single structure item, which is evaluation of a constant string. *)
           PStr [{ pstr_desc =
                   Pstr_eval ({ pexp_loc  = loc;
-                               pexp_desc = Pexp_ifthenelse (cond, thenClause, elseOption) }, _) }] ->
+                               pexp_desc = Pexp_ifthenelse( {pexp_loc=cond_loc;pexp_desc=cond_desc},
+                                  then_clause, else_option) }, _) }] ->
           (* Replace with a constant string with the value from the environment. *)
-          let which = false in
-          if which then thenClause else (match elseOption with Some x -> x | _ -> 
+          let which = match cond_desc with
+            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "=="})}, [_,x;_,y] ) ->
+              false
+            | _ ->
+              raise (Location.Error (
+                  Location.error ~loc:cond_loc "[%const if...] does not know how to interpret that kind of expression"))
+          in
+          if which then then_clause else (match else_option with Some x -> x | _ -> 
             Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
         | _ ->
           raise (Location.Error (
