@@ -12,11 +12,20 @@ let ifenv_mapper argv =
     expr = fun mapper expr ->
       match expr with
       (* Is this an extension node? *)
-      | { pexp_loc=loc; pexp_desc =
-          (* Should have name "ifenv". *)
-          Pexp_ifthenelse (cond, thenClause, elseOption)} ->
-            Exp.constant ~loc (Const_string ("STRING", None))
-      (* Delegate to the default mapper. *)
+      | { pexp_desc =
+          (* Should have name "getenv". *)
+          Pexp_extension ({ txt = "const"; loc }, pstr)} ->
+        begin match pstr with
+        | (* Should have a single structure item, which is evaluation of a constant string. *)
+          PStr [{ pstr_desc =
+                  Pstr_eval ({ pexp_loc  = loc;
+                               pexp_desc = Pexp_ifthenelse (cond, thenClause, elseOption) }, _) }] ->
+          (* Replace with a constant string with the value from the environment. *)
+          Exp.constant ~loc (Const_string ("BLARG", None))
+        | _ ->
+          raise (Location.Error (
+                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1"))
+        end      (* Delegate to the default mapper. *)
       | x -> default_mapper.expr mapper x;
   }
 
