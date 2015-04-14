@@ -6,21 +6,23 @@ open Longident
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
-let rec ifenv_mapper argv =
+let ifenv_mapper argv =
   (* Our ifenv_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
     expr = let rec process mapper expr =
+      let didnt_find_if loc =
+        raise (Location.Error (
+                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1")) in
       match expr with
       (* Is this an extension node? *)
-      | { pexp_desc =
-          (* Should have name "getenv". *)
-          Pexp_extension ({ txt = "const"; loc }, pstr)} ->
+      | { pexp_desc = Pexp_extension ({ txt = "const"; loc }, pstr)} ->
         begin match pstr with
         | (* Should have a single structure item, which is evaluation of a constant string. *)
-          PStr [{ pstr_desc =
-                  Pstr_eval ({ pexp_loc  = loc;
+          PStr [{ pstr_desc = Pstr_eval (exp,_) }] ->
+            begin match process mapper exp with
+            { pexp_loc  = loc;
                                pexp_desc = Pexp_ifthenelse( {pexp_loc=cond_loc;pexp_desc=cond_desc},
-                                  then_clause, else_option) }, _) }] ->
+                                  then_clause, else_option) } ->
           (* Replace with a constant string with the value from the environment. *)
           let which = match cond_desc with
             | Pexp_construct ({txt=Lident "true"},None) -> true
@@ -36,12 +38,11 @@ let rec ifenv_mapper argv =
               raise (Location.Error (
                   Location.error ~loc:cond_loc "[%const if...] does not know how to interpret that kind of expression"))
           in
-          let recurse = process mapper in
-          if which then recurse then_clause else (match else_option with Some x -> recurse x | _ -> 
+          if which then then_clause else (match else_option with Some x -> x | _ -> 
             Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
-        | _ ->
-          raise (Location.Error (
-                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1"))
+          | _ -> didnt_find_if loc
+          end
+        | _ -> didnt_find_if loc
         end      (* Delegate to the default mapper. *)
       | x -> default_mapper.expr mapper x;
     in
