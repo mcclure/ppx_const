@@ -23,9 +23,9 @@ let ifenv_mapper argv =
                                   then_clause, else_option) }, _) }] ->
           (* Replace with a constant string with the value from the environment. *)
           let which = match cond_desc with
-            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "=="})}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) ->
+            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "="})}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) ->
               begin match x,y with
-                | Pexp_constant x, Pexp_constant y -> x == y
+                | Pexp_constant x, Pexp_constant y -> x = y
                 | _ ->
                   raise (Location.Error (
                     Location.error ~loc:cond_loc "[%const if...] does not know how to compare those two expressions"))
