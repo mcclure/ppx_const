@@ -6,10 +6,10 @@ open Longident
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
-let ifenv_mapper argv =
+let rec ifenv_mapper argv =
   (* Our ifenv_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
-    expr = fun mapper expr ->
+    expr = let rec process mapper expr =
       match expr with
       (* Is this an extension node? *)
       | { pexp_desc =
@@ -34,13 +34,16 @@ let ifenv_mapper argv =
               raise (Location.Error (
                   Location.error ~loc:cond_loc "[%const if...] does not know how to interpret that kind of expression"))
           in
-          if which then then_clause else (match else_option with Some x -> x | _ -> 
+          let recurse = process mapper in
+          if which then recurse then_clause else (match else_option with Some x -> recurse x | _ -> 
             Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
         | _ ->
           raise (Location.Error (
                   Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1"))
         end      (* Delegate to the default mapper. *)
       | x -> default_mapper.expr mapper x;
+    in
+    process
   }
 
 let () = register "ifenv" ifenv_mapper
