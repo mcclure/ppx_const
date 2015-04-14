@@ -1,7 +1,7 @@
 ppx_ifenv
 ==========
 
-Simple alteration of ppx_getenv.
+Implements an if%const directive. Written by Andi McClure based on Whitequark's ppx_getenv sample
 
 License
 -------
