@@ -23,6 +23,8 @@ let rec ifenv_mapper argv =
                                   then_clause, else_option) }, _) }] ->
           (* Replace with a constant string with the value from the environment. *)
           let which = match cond_desc with
+            | Pexp_construct ({txt=Lident "true"},None) -> true
+            | Pexp_construct ({txt=Lident "false"},None) -> false
             | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "="})}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) ->
               begin match x,y with
                 | Pexp_constant x, Pexp_constant y -> x = y
