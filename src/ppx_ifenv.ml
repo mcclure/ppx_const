@@ -6,15 +6,15 @@ open Longident
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
-let getenv_mapper argv =
-  (* Our getenv_mapper only overrides the handling of expressions in the default mapper. *)
+let ifenv_mapper argv =
+  (* Our ifenv_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
     expr = fun mapper expr ->
       match expr with
       (* Is this an extension node? *)
       | { pexp_desc =
-          (* Should have name "getenv". *)
-          Pexp_extension ({ txt = "getenv"; loc }, pstr)} ->
+          (* Should have name "ifenv". *)
+          Pexp_extension ({ txt = "ifenv"; loc }, pstr)} ->
         begin match pstr with
         | (* Should have a single structure item, which is evaluation of a constant string. *)
           PStr [{ pstr_desc =
@@ -24,10 +24,10 @@ let getenv_mapper argv =
           Exp.constant ~loc (Const_string (getenv sym, None))
         | _ ->
           raise (Location.Error (
-                  Location.error ~loc "[%getenv] accepts a string, e.g. [%getenv \"USER\"]"))
+                  Location.error ~loc "[%ifenv] accepts a string, e.g. [%ifenv \"USER\"]"))
         end
       (* Delegate to the default mapper. *)
       | x -> default_mapper.expr mapper x;
   }
 
-let () = register "getenv" getenv_mapper
+let () = register "ifenv" ifenv_mapper

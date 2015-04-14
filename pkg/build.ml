@@ -8,8 +8,8 @@ let () =
   close_out oc
 
 let () =
-  Pkg.describe "ppx_getenv" ~builder:`OCamlbuild [
+  Pkg.describe "ppx_ifenv" ~builder:`OCamlbuild [
     Pkg.lib "pkg/META";
-    Pkg.bin ~auto:true "src/ppx_getenv" ~dst:"../lib/ppx_getenv/ppx_getenv";
+    Pkg.bin ~auto:true "src/ppx_ifenv" ~dst:"../lib/ppx_ifenv/ppx_ifenv";
     Pkg.doc "README.md";
     Pkg.doc "LICENSE.txt"]

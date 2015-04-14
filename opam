@@ -1,10 +1,10 @@
-opam-version: "1.2"
-maintainer: "Peter Zotov <whitequark@whitequark.org>"
-authors: [ "Peter Zotov <whitequark@whitequark.org>" ]
+opam-version: "1.0"
+maintainer: "Andi McClure <andi.m.mcclure@gmail.com>"
+authors: [ "Andi McClure <andi.m.mcclure@gmail.com>" ]
 license: "Public domain"
-homepage: "https://github.com/whitequark/ppx_getenv"
-bug-reports: "https://github.com/whitequark/ppx_getenv/issues"
-dev-repo: "git://github.com/whitequark/ppx_getenv.git"
+homepage: "https://github.com/mcclure/ppx_ifenv"
+bug-reports: "https://github.com/mcclure/ppx_ifenv/issues"
+dev-repo: "git://github.com/mcclure/ppx_ifenv.git"
 tags: [ "syntax" ]
 substs: [ "pkg/META" ]
 build: [
@@ -12,7 +12,7 @@ build: [
                          "native-dynlink=%{ocaml-native-dynlink}%"
 ]
 build-test: [
-  "ocamlbuild" "-classic-display" "-use-ocamlfind" "src_test/test_ppx_getenv.byte" "--"
+  "ocamlbuild" "-classic-display" "-use-ocamlfind" "src_test/test_ppx_ifenv.byte" "--"
 ]
 depends: [
   "ppx_tools"    {>= "0.99.1"}

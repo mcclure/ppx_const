@@ -8,7 +8,7 @@ let () = dispatch (
   function
   | After_rules ->
     flag ["ocaml"; "compile"; "ppx_byte"] &
-      S[A"-ppx"; A"src/ppx_getenv.byte"];
+      S[A"-ppx"; A"src/ppx_ifenv.byte"];
     flag ["ocaml"; "compile"; "ppx_native"] &
-      S[A"-ppx"; A"src/ppx_getenv.native"]
+      S[A"-ppx"; A"src/ppx_ifenv.native"]
   | _ -> ())
