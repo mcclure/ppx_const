@@ -4,7 +4,7 @@ build:
 
 test: build
 	rm -rf _build/src_test/
-	ocamlbuild -classic-display -use-ocamlfind src_test/test_ppx_ifenv.byte --
+	ocamlbuild -classic-display -use-ocamlfind src_test/test_ppx_const.byte --
 
 clean:
 	ocamlbuild -clean

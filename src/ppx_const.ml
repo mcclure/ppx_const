@@ -6,8 +6,8 @@ open Longident
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
-let ifenv_mapper argv =
-  (* Our ifenv_mapper only overrides the handling of expressions in the default mapper. *)
+let const_mapper argv =
+  (* Our const_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
     expr = let rec process mapper expr =
       let didnt_find_if loc =
@@ -49,4 +49,4 @@ let ifenv_mapper argv =
     process
   }
 
-let () = register "ifenv" ifenv_mapper
+let () = register "const" const_mapper

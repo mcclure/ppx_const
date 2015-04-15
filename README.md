@@ -1,4 +1,4 @@
-ppx_ifenv
+ppx_const
 ==========
 
 Implements an if%const directive. Written by Andi McClure based on Whitequark's ppx_getenv sample
