@@ -21,19 +21,21 @@ let const_mapper argv =
           PStr [{ pstr_desc = Pstr_eval (exp,_) }] ->
             begin match process mapper exp with
             { pexp_loc  = loc;
-                               pexp_desc = Pexp_ifthenelse( {pexp_loc=cond_loc;pexp_desc=cond_desc},
-                                  then_clause, else_option) } ->
+              pexp_desc = Pexp_ifthenelse( {pexp_loc=cond_loc;pexp_desc=cond_desc},
+                then_clause, else_option) } ->
           (* Replace with a constant string with the value from the environment. *)
-          let which = match cond_desc with
-            | Pexp_construct ({txt=Lident "true"},None) -> true
-            | Pexp_construct ({txt=Lident "false"},None) -> false
-            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "="})}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) ->
-              begin match x,y with
-                | Pexp_constant x, Pexp_constant y -> x = y
+          let eqTest x y op = 
+            match x,y with
+                | Pexp_constant x, Pexp_constant y -> op x y
                 | _ ->
                   raise (Location.Error (
                     Location.error ~loc:cond_loc "[%const if...] does not know how to compare these two expressions"))
-              end
+          in
+          let which = match cond_desc with
+            | Pexp_construct ({txt=Lident "true"},None) -> true
+            | Pexp_construct ({txt=Lident "false"},None) -> false
+            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "=" })}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) -> eqTest x y (=)
+            | Pexp_apply( {pexp_desc=Pexp_ident({txt=Lident "<>"})}, [_,{pexp_desc=x};_,{pexp_desc=y}] ) -> eqTest x y (<>)
             | _ ->
               raise (Location.Error (
                   Location.error ~loc:cond_loc "[%const if...] does not know how to interpret this kind of expression"))
