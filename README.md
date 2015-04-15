@@ -1,7 +1,7 @@
 ppx_const
 ==========
 
-Implements an if%const directive. Written by Andi McClure based on Whitequark's ppx_getenv sample
+Implements an if%const directive. Written by Andi McClure based on whitequark's ppx_getenv sample
 
 License
 -------

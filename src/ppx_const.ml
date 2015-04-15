@@ -32,11 +32,11 @@ let const_mapper argv =
                 | Pexp_constant x, Pexp_constant y -> x = y
                 | _ ->
                   raise (Location.Error (
-                    Location.error ~loc:cond_loc "[%const if...] does not know how to compare those two expressions"))
+                    Location.error ~loc:cond_loc "[%const if...] does not know how to compare these two expressions"))
               end
             | _ ->
               raise (Location.Error (
-                  Location.error ~loc:cond_loc "[%const if...] does not know how to interpret that kind of expression"))
+                  Location.error ~loc:cond_loc "[%const if...] does not know how to interpret this kind of expression"))
           in
           if which then then_clause else (match else_option with Some x -> x | _ -> 
             Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
