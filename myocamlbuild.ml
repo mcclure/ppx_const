@@ -1,9 +1,5 @@
 open Ocamlbuild_plugin
 
-(* used in tests *)
-let _ =
-  Unix.putenv "PPX_GETENV_CHECK" "42"
-
 let () = dispatch (
   function
   | After_rules ->

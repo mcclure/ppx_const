@@ -1,7 +1,7 @@
 opam-version: "1.0"
 maintainer: "Andi McClure <andi.m.mcclure@gmail.com>"
 authors: [ "Andi McClure <andi.m.mcclure@gmail.com>" ]
-license: "Public domain"
+license: "Creative Commons Zero (\"public domain or equivalent\")"
 homepage: "https://github.com/mcclure/ppx_const"
 bug-reports: "https://github.com/mcclure/ppx_const/issues"
 dev-repo: "git://github.com/mcclure/ppx_const.git"
