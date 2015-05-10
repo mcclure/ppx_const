@@ -50,6 +50,13 @@ let const_mapper argv =
                 Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
             | { pexp_loc = match_loc;
                 pexp_desc = Pexp_match (match_expr, cases) } ->
+              let () = match match_expr.pexp_desc with
+                | Pexp_constant _ -> ()
+                | _ ->
+                  raise (Location.Error
+                           (Location.error ~loc:match_expr.pexp_loc
+                              "[%const match...] does not know how to interpret this kind of expression"))
+              in
               let check_case (case : case)  = match case with
                 | { pc_guard = None; _ } -> ()
                 | { pc_guard = Some guard; _ } ->
