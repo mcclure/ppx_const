@@ -48,6 +48,32 @@ let const_mapper argv =
               if which then then_clause else (match else_opt with Some x -> x | _ ->
                 (* Or, if the else clause is selected but is not specified, a () *)
                 Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
+            | { pexp_loc = match_loc;
+                pexp_desc = Pexp_match (match_expr, cases) } ->
+              let check_case (case : case)  = match case with
+                | { pc_guard = None; _ } -> ()
+                | { pc_guard = Some guard; _ } ->
+                  raise (Location.Error
+                           (Location.error ~loc:guard.pexp_loc
+                              "[%const match...] Guards are not allowed in match%const")) in
+              let () = List.iter check_case cases in
+              let rec find_match cases = match cases with
+                | case :: cases ->
+                  begin match case.pc_lhs.ppat_desc with
+                    | Ppat_any | Ppat_var _ -> case.pc_rhs
+                    | Ppat_constant const ->
+                      if match_expr.pexp_desc = Pexp_constant const
+                      then case.pc_rhs
+                      else find_match cases
+                    | _ ->
+                      raise (Location.Error
+                               (Location.error ~loc:case.pc_lhs.ppat_loc
+                                  "[%const match] Bad pattern"))
+                  end
+                | [] -> raise (Location.Error
+                                 (Location.error ~loc:match_loc
+                                    "[%const match...] No match case succeeded!"))
+              in find_match cases
             (* Failed to match Pexp_ifthenelse, so fail *)
             | _ -> didnt_find_if loc
           end
