@@ -28,10 +28,10 @@ let const_mapper argv =
               (* Used by = and <> *)
               let pairTest x y op = 
                 match x,y with
-                    | Pexp_constant x, Pexp_constant y -> op x y
-                    | _ ->
-                      raise (Location.Error (
-                        Location.error ~loc:cond_loc "[%const if...] does not know how to compare these two expressions"))
+                | Pexp_constant x, Pexp_constant y -> op x y
+                | _ ->
+                  raise (Location.Error (
+                      Location.error ~loc:cond_loc "[%const if...] does not know how to compare these two expressions"))
               in
               (* Evaluate conditional *)
               let which = match cond_desc with
@@ -47,8 +47,8 @@ let const_mapper argv =
               if which then then_clause else (match else_option with Some x -> x | _ ->
                 (* Or, if the else clause is selected but is not specified, a () *)
                 Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
-          (* Failed to match Pexp_ifthenelse, so fail *)
-          | _ -> didnt_find_if loc
+            (* Failed to match Pexp_ifthenelse, so fail *)
+            | _ -> didnt_find_if loc
           end
         (* Failed to match Pstr, so fail *)
         | _ -> didnt_find_if loc
