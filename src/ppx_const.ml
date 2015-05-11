@@ -58,11 +58,17 @@ let const_mapper argv =
                               "[%const match...] does not know how to interpret this kind of expression"))
               in
               let check_case (case : case)  = match case with
-                | { pc_guard = None; _ } -> ()
+                | { pc_lhs = { ppat_desc = Ppat_constant _ }; pc_guard = None; _ }
+                | { pc_lhs = { ppat_desc = Ppat_var _ }; pc_guard = None; _ }
+                | { pc_lhs = { ppat_desc = Ppat_any }; pc_guard = None; _ } -> ()
                 | { pc_guard = Some guard; _ } ->
                   raise (Location.Error
                            (Location.error ~loc:guard.pexp_loc
-                              "[%const match...] Guards are not allowed in match%const")) in
+                              "[%const match...] Guards are not allowed in match%const"))
+                | { pc_lhs; _ } ->
+                  raise (Location.Error
+                           (Location.error ~loc:pc_lhs.ppat_loc
+                              "[%const match...] Bad pattern in match%const")) in
               let () = List.iter check_case cases in
               let rec find_match cases = match cases with
                 | case :: cases ->
