@@ -11,7 +11,8 @@ let test_ppx_const _ =
   (* Fails because true is a constructor, not a constant *)
   (*assert_equal "match2"   @@ (match%const true with true -> "match2" | false -> "bogus");*)
   assert_equal "match3"   @@ (match%const 3 with 1 -> () | 3 -> "match3" | 3 -> "bogus");
-  assert_equal 8          @@ 3 + (match%const "five" with "goodbye type safety" -> () | "five" -> 5)
+  assert_equal 8          @@ 3 + (match%const "five" with "goodbye type safety" -> () | "five" -> 5);
+  assert_equal "match5"   @@ "match" ^ string_of_int (match%const 4 with 11 -> 11 | four -> four + 1)
 
 
 let suite = "Test ppx_const" >::: [

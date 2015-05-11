@@ -73,7 +73,9 @@ let const_mapper argv =
               let rec find_match cases = match cases with
                 | case :: cases ->
                   begin match case.pc_lhs.ppat_desc with
-                    | Ppat_any | Ppat_var _ -> case.pc_rhs
+                    | Ppat_any -> case.pc_rhs
+                    | Ppat_var _ ->
+                      [%expr let [%p case.pc_lhs] = [%e match_expr] in [%e case.pc_rhs]]
                     | Ppat_constant const ->
                       if match_expr.pexp_desc = Pexp_constant const
                       then case.pc_rhs
