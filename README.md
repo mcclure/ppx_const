@@ -1,7 +1,7 @@
 ppx_const
 =========
 
-This is an OCaml language extension implementing an `if%const` statement. The `if%const` is evaluated at compile time, and the appropriate clause substituted without the ignored clause being fully compiled. This allows you to avoid consequences such as module inclusion or type inference changes which would otherwise have resulted from the ignored clause.
+This is an OCaml language extension implementing `if%const` and `match%const` statements. The `if%const` and `match%const` are evaluated at compile time, and the appropriate clause substituted without the ignored clause(s) being fully compiled. This allows you to avoid consequences such as module inclusion or type inference changes which would otherwise have resulted from the ignored clause(s).
 
 In other words, ppx\_const works like `#if` in the C preprocessor, but is implemented entirely within the OCaml language using the [ppx](http://whitequark.org/blog/2014/04/16/a-guide-to-extension-points-in-ocaml/) mechanism. In conjunction with [ppx_getenv](https://github.com/whitequark/ppx_getenv), this provides a lightweight alternative to Cppo.
 
@@ -24,6 +24,15 @@ COND must be one of the following:
 COND may also contain extension nodes (including `if%const`s) as long as they evaluate to a constant expression by the time ppx\_const sees them.
 
 A and B are not required to be of the same type. Like with normal `if`, the return type of `if%const false then X` is unit.
+
+ppx\_const can also be invoked with the following:
+
+    match%const MATCHED with P_1 -> E_1 | ... | P_n -> E_n
+
+MATCHED and P_1..P_n must be what are considered constants in the AST, i.e. ints, floats, strings, but notably *not* true or false (they're constructors!). Furthermore, the patterns P_1..P_n may be variables or `_`.
+
+If a pattern P_i is a variable `x` the expression, if matched, will compile to `let x = MATCHED in E_i`.
+
 
 An example: Using ppx_const with ppx\_gentenv
 ---------------------------------------------
