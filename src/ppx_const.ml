@@ -50,8 +50,10 @@ let const_mapper argv =
                 Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
             | { pexp_loc = match_loc;
                 pexp_desc = Pexp_match (match_expr, cases) } ->
-              let () = match match_expr.pexp_desc with
-                | Pexp_constant _ -> ()
+              let () = match match_expr with
+                | { pexp_desc = Pexp_constant _; _ }
+                | [%expr true]
+                | [%expr false] -> ()
                 | _ ->
                   raise (Location.Error
                            (Location.error ~loc:match_expr.pexp_loc
@@ -63,6 +65,8 @@ let const_mapper argv =
                            (Location.error ~loc:guard.pexp_loc
                               "[%const match...] Guards are not allowed in match%const"))
                 | { pc_lhs = { ppat_desc = Ppat_constant _ }; _ }
+                | { pc_lhs = [%pat? true]; _ }
+                | { pc_lhs = [%pat? false]; _ }
                 | { pc_lhs = { ppat_desc = Ppat_var _ }; _ }
                 | { pc_lhs = [%pat? _]; _ } -> ()
                 | { pc_lhs; _ } ->
@@ -80,6 +84,14 @@ let const_mapper argv =
                       if match_expr.pexp_desc = Pexp_constant const
                       then case.pc_rhs
                       else find_match cases
+                    | [%pat? true] -> begin match match_expr with
+                        | [%expr true] -> case.pc_rhs
+                        | _ -> find_match cases
+                      end
+                    | [%pat? false] -> begin match match_expr with
+                        | [%expr false] -> case.pc_rhs
+                        | _ -> find_match cases
+                      end
                     | _ ->
                       raise (Location.Error
                                (Location.error ~loc:case.pc_lhs.ppat_loc

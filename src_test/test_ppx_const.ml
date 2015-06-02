@@ -8,8 +8,7 @@ let test_ppx_const _ =
   assert_equal "Blarg."   @@ if%const 2=if%const 1=0 then 3 else 2 then "Blarg." else 1;
   assert_equal "Blarg"    @@ if%const 3 <> 3 then 4 else if%const 4 <> 3 then "Blarg" else 6;
   assert_equal "match1"   @@ (match%const 42 with _ -> "match1");
-  (* Fails because true is a constructor, not a constant *)
-  (*assert_equal "match2"   @@ (match%const true with true -> "match2" | false -> "bogus");*)
+  assert_equal "match2"   @@ (match%const true with true -> "match2" | false -> "bogus");
   assert_equal "match3"   @@ (match%const 3 with 1 -> () | 3 -> "match3" | 3 -> "bogus");
   assert_equal 8          @@ 3 + (match%const "five" with "goodbye type safety" -> () | "five" -> 5);
   assert_equal "match5"   @@ "match" ^ string_of_int (match%const 4 with 11 -> 11 | four -> four + 1)
