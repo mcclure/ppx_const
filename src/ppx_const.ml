@@ -12,7 +12,7 @@ let const_mapper argv =
       (* Shared error handler used by multiple cases below *)
       let didnt_find_if loc =
         raise (Location.Error (
-                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1"))
+                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1, or a match statement"))
       in
       match expr with
       (* Is this an extension node? *)
@@ -21,11 +21,11 @@ let const_mapper argv =
         | PStr [{ pstr_desc = Pstr_eval (exp,_) }] ->
           (* Unpack expression, then recurse to handle internal if%matches and match on result *)
           begin match process mapper exp with
-            (* Currently only match with ifthenelse *)
+            (* Syntax extension 1 -- ifthenelse *)
             | { pexp_loc  = loc;
                 pexp_desc = Pexp_ifthenelse (cond, then_clause, else_opt) } ->
               (* Used by = and <> *)
-              let pairTest x y op = 
+              let pairTest x y op =
                 match x,y with
                 | Pexp_constant x, Pexp_constant y -> op x y
                 | _ ->
@@ -48,8 +48,11 @@ let const_mapper argv =
               if which then then_clause else (match else_opt with Some x -> x | _ ->
                 (* Or, if the else clause is selected but is not specified, a () *)
                 Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
+
+            (* Syntax extension 1 -- match *)
             | { pexp_loc = match_loc;
                 pexp_desc = Pexp_match (match_expr, cases) } ->
+              (* Basic syntax-check expression *)
               let () = match match_expr with
                 | { pexp_desc = Pexp_constant _; _ }
                 | [%expr true]
@@ -59,6 +62,7 @@ let const_mapper argv =
                            (Location.error ~loc:match_expr.pexp_loc
                               "[%const match...] does not know how to interpret this kind of expression"))
               in
+              (* Syntax-check, bar "when" *)
               let check_case (case : case)  = match case with
                 | { pc_guard = Some guard; _ } ->
                   raise (Location.Error
@@ -74,16 +78,22 @@ let const_mapper argv =
                            (Location.error ~loc:pc_lhs.ppat_loc
                               "[%const match...] Bad pattern in match%const")) in
               let () = List.iter check_case cases in
+              (* Evaluate match, check | expressions one by one *)
               let rec find_match cases = match cases with
                 | case :: cases ->
                   begin match case.pc_lhs with
+                    (* _ always matches *)
                     | [%pat? _] -> case.pc_rhs
+                    (* Variable names always match become "bindings", as with normal match *)
                     | { ppat_desc = Ppat_var _; _ } ->
                       [%expr let [%p case.pc_lhs] = [%e match_expr] in [%e case.pc_rhs]]
+                    (* Constants get tested for equality *)
                     | { ppat_desc = Ppat_constant const; _ } ->
                       if match_expr.pexp_desc = Pexp_constant const
                       then case.pc_rhs
+                      (* When matches are not found, recurse *)
                       else find_match cases
+                    (* true and false are special case *)
                     | [%pat? true] -> begin match match_expr with
                         | [%expr true] -> case.pc_rhs
                         | _ -> find_match cases

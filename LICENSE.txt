@@ -1,4 +1,4 @@
-Written in 2015 by Andi McClure <andi.m.mcclure@gmail.com>.
+Written in 2015 by Andi McClure <andi.m.mcclure@gmail.com> with contributions by Reynir Björnsson.
 
 This software is distributed under the Creative Commons Zero license. This
 means the work is released in the public domain in all jurisdictions where

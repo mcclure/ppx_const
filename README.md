@@ -10,7 +10,11 @@ This software was written by Andi McClure <<andi.m.mcclure@gmail.com>> based on 
 Usage
 -----
 
-ppx\_const may be invoked with either of the following:
+ppx\_const may be invoked with either `if%const` or `match%const`.
+
+### if%const
+
+`if%const` may be invoked with either of:
 
     if%const COND then A else B
     if%const COND then A
@@ -19,36 +23,38 @@ COND must be one of the following:
 
 * `true`
 * `false`
-* An expression consisting of two literals and either the `<>` or `=` operator.
+* An expression consisting of two literals (strings, ints, floats) and either the `<>` or `=` operator.
 
 COND may also contain extension nodes (including `if%const`s) as long as they evaluate to a constant expression by the time ppx\_const sees them.
 
 A and B are not required to be of the same type. Like with normal `if`, the return type of `if%const false then X` is unit.
 
+### match%const
+
 ppx\_const can also be invoked with the following:
 
-    match%const MATCHED with P_1 -> E_1 | ... | P_n -> E_n
+    match%const MATCHED with P\_1 -> E\_1 | ... | P\_n -> E\_n
 
-MATCHED and P_1..P_n must be what are considered constants in the AST, i.e. ints, floats, strings, but notably *not* true or false (they're constructors!). Furthermore, the patterns P_1..P_n may be variables or `_`.
+MATCHED and P\_1..P\_n must be either literals (strings, ints, floats) or one of the special constructors `true` and `false`. Like with `if%const`, MATCHED may contain extension nodes, although the P1..P\_n may not.
 
-If a pattern P_i is a variable `x` the expression, if matched, will compile to `let x = MATCHED in E_i`.
+The patterns P\_1..P\_n may also be variables or `_`, in which case they will always match. Matching on a variable name will "bind" a variable by that name in the match expression: If a pattern P\_i is a variable `x` then the expression, if matched, will compile to `let x = MATCHED in E_i`.
 
 
 An example: Using ppx_const with ppx\_gentenv
 ---------------------------------------------
 
-Say your program has a Graph module with heavyweight dependencies (cairo or something). Some users may prefer to compile your program without the graph feature, so that they don't have to install the dependencies. You can achieve this by installing ppx\_const and ppx\_getenv, and invoking the graph feature like this:
+Say your program has a Graph module with heavyweight dependencies (cairo or whatever). Some users may prefer to compile your program without the graph feature, so that they don't have to install the dependencies. You can do this by installing ppx\_const and ppx\_getenv, and invoking the graph feature like this:
 
-	if%const [%getenv "BUILD_OMIT_GRAPH"] = "" then
-		Graph.create filename
-	else
-		print_endline "Graph feature not available."
+    if%const [%getenv "BUILD_OMIT_GRAPH"] = "" then
+        Graph.create filename
+    else
+        print_endline "Graph feature not available."
 
 For this to work, you'll need to make **certain** that ppx\_getenv runs before ppx\_const, so that `if%const` sees a constant string and not the `[%` node. In ocamlbuild, you do this by ordering them like this in your `_tags` file:
 
-	<*>: package(ppx_getenv, ppx_const)
+    <*>: package(ppx_getenv, ppx_const)
 
-When you build, if the `BUILD_OMIT_GRAPH` environment variable is set to a nonempty string, the Graph.create call will be omitted entirely from the compiled binary. If this is the only invocation, the Graph module and all its dependencies will also be omitted from the binary. If you do not set this environment variable, the `[%getenv` check will return an empty string at build time and the graph function will be included.
+In this example, when you build, if the `BUILD_OMIT_GRAPH` environment variable is set to a nonempty string then the `Graph.create` call will be omitted entirely from the compiled binary. If this is the only invocation of Graph, then the Graph module and all its dependencies will also be omitted from the binary. If you do not set this environment variable, the `[%getenv` check will become an empty string at build time and the graph function will be included.
 
 License
 -------
