@@ -4,6 +4,52 @@ open Asttypes
 open Parsetree
 open Longident
 
+(* Shawdow polymorphic equality functions from the standard library to
+   avoid future issues *)
+let (=) : unit -> unit -> bool = (=)
+let (<>) : unit -> unit -> bool = (=)
+let (>) : unit -> unit -> bool = (=)
+let (<) : unit -> unit -> bool = (=)
+let (>=) : unit -> unit -> bool = (=)
+let (<=) : unit -> unit -> bool = (=)
+let compare : unit -> unit -> bool = (=)
+let min : unit -> unit -> unit = min
+let max : unit -> unit -> unit = max
+
+type const_expr =
+  | Const of constant
+  | True
+  | False
+
+let const_eq x y = match x, y with
+  | Pconst_integer (x, _suff1), Pconst_integer (y, _suff2) ->
+      (* Ignore suffixes. It doesn't really matter if they're different types
+         as long as their values match *)
+      String.equal x y
+  | Pconst_char x, Pconst_char y ->
+      Char.equal x y
+  | Pconst_string (x, _loc1, _delim1), Pconst_string (y, _loc2, _delim2) ->
+      String.equal x y
+  | Pconst_float (x, _suff1), Pconst_float (y, _suff2) ->
+      (* Ignore suffixes. It doesn't really matter if they're different types
+         as long as their values match *)
+      String.equal x y
+  | Pconst_integer _, _
+  | Pconst_char _, _
+  | Pconst_string _, _
+  | Pconst_float _, _ ->
+      false
+
+let const_neq x y = not (const_eq x y)
+
+let const_expr_eq x y = match x, y with
+  | Const x, Const y -> const_eq x y
+  | True, True
+  | False, False -> true
+  | Const _, _
+  | True, _
+  | False, _ -> false
+
 let const_mapper argv =
   (* Our const_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with expr =
@@ -37,9 +83,9 @@ let const_mapper argv =
                 | [%expr true] -> true
                 | [%expr false] -> false
                 | [%expr [%e? x] = [%e? y]] ->
-                  pairTest x.pexp_desc y.pexp_desc (=)
+                  pairTest x.pexp_desc y.pexp_desc const_eq
                 | [%expr [%e? x] <> [%e? y]] ->
-                  pairTest x.pexp_desc y.pexp_desc (<>)
+                  pairTest x.pexp_desc y.pexp_desc const_neq
                 | _ ->
                   raise (Location.Error (
                       Location.error ~loc:cond.pexp_loc "[%const if...] does not know how to interpret this kind of expression"))
@@ -53,10 +99,10 @@ let const_mapper argv =
             | { pexp_loc = match_loc;
                 pexp_desc = Pexp_match (match_expr, cases) } ->
               (* Basic syntax-check expression *)
-              let () = match match_expr with
-                | { pexp_desc = Pexp_constant _; _ }
-                | [%expr true]
-                | [%expr false] -> ()
+              let matched_expr = match match_expr with
+                | { pexp_desc = Pexp_constant c; _ } -> Const c
+                | [%expr true] -> True
+                | [%expr false] -> False
                 | _ ->
                   raise (Location.Error
                            (Location.error ~loc:match_expr.pexp_loc
@@ -81,6 +127,12 @@ let const_mapper argv =
               (* Evaluate match, check | expressions one by one *)
               let rec find_match cases = match cases with
                 | case :: cases ->
+                  let handle_const expr =
+                    if const_expr_eq matched_expr expr
+                    then case.pc_rhs
+                    (* When matches are not found, recurse *)
+                    else find_match cases
+                  in
                   begin match case.pc_lhs with
                     (* _ always matches *)
                     | [%pat? _] -> case.pc_rhs
@@ -88,20 +140,10 @@ let const_mapper argv =
                     | { ppat_desc = Ppat_var _; _ } ->
                       [%expr let [%p case.pc_lhs] = [%e match_expr] in [%e case.pc_rhs]]
                     (* Constants get tested for equality *)
-                    | { ppat_desc = Ppat_constant const; _ } ->
-                      if match_expr.pexp_desc = Pexp_constant const
-                      then case.pc_rhs
-                      (* When matches are not found, recurse *)
-                      else find_match cases
+                    | { ppat_desc = Ppat_constant const; _ } -> handle_const (Const const)
                     (* true and false are special case *)
-                    | [%pat? true] -> begin match match_expr with
-                        | [%expr true] -> case.pc_rhs
-                        | _ -> find_match cases
-                      end
-                    | [%pat? false] -> begin match match_expr with
-                        | [%expr false] -> case.pc_rhs
-                        | _ -> find_match cases
-                      end
+                    | [%pat? true] -> handle_const True
+                    | [%pat? false] -> handle_const False
                     | _ ->
                       raise (Location.Error
                                (Location.error ~loc:case.pc_lhs.ppat_loc
