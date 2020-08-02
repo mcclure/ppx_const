@@ -1,0 +1,4 @@
+(test
+  (name test_ppx_const)
+  (preprocess (pps ppx_const))
+  (libraries ounit2))

@@ -1,10 +1,11 @@
+open Migrate_parsetree.OCaml_411.Ast
 open Ast_mapper
-open Ast_helper
 open Asttypes
 open Parsetree
-open Longident
 
-(* Shawdow polymorphic equality functions from the standard library to
+let ocaml_version = Migrate_parsetree.Versions.ocaml_411
+
+(* Shadow polymorphic equality functions from the standard library to
    avoid future issues *)
 let (=) : unit -> unit -> bool = (=)
 let (<>) : unit -> unit -> bool = (=)
@@ -50,7 +51,7 @@ let const_expr_eq x y = match x, y with
   | True, _
   | False, _ -> false
 
-let const_mapper argv =
+let const_mapper _config _cookies =
   (* Our const_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with expr =
     (* Create a recursive function and then immediately return it *)
@@ -62,14 +63,14 @@ let const_mapper argv =
       in
       match expr with
       (* Is this an extension node? *)
-      | { pexp_desc = Pexp_extension ({ txt = "const"; loc }, pstr)} ->
+      | { pexp_desc = Pexp_extension ({ txt = "const"; loc }, pstr); _ } ->
         begin match pstr with
-        | PStr [{ pstr_desc = Pstr_eval (exp,_) }] ->
+        | PStr [{ pstr_desc = Pstr_eval (exp,_); _ }] ->
           (* Unpack expression, then recurse to handle internal if%matches and match on result *)
           begin match process mapper exp with
             (* Syntax extension 1 -- ifthenelse *)
             | { pexp_loc  = loc;
-                pexp_desc = Pexp_ifthenelse (cond, then_clause, else_opt) } ->
+                pexp_desc = Pexp_ifthenelse (cond, then_clause, else_opt); _ } ->
               (* Used by = and <> *)
               let pairTest x y op =
                 match x,y with
@@ -97,7 +98,7 @@ let const_mapper argv =
 
             (* Syntax extension 1 -- match *)
             | { pexp_loc = match_loc;
-                pexp_desc = Pexp_match (match_expr, cases) } ->
+                pexp_desc = Pexp_match (match_expr, cases); _ } ->
               (* Basic syntax-check expression *)
               let matched_expr = match match_expr with
                 | { pexp_desc = Pexp_constant c; _ } -> Const c
@@ -114,10 +115,10 @@ let const_mapper argv =
                   raise (Location.Error
                            (Location.error ~loc:guard.pexp_loc
                               "[%const match...] Guards are not allowed in match%const"))
-                | { pc_lhs = { ppat_desc = Ppat_constant _ }; _ }
+                | { pc_lhs = { ppat_desc = Ppat_constant _; _ }; _ }
                 | { pc_lhs = [%pat? true]; _ }
                 | { pc_lhs = [%pat? false]; _ }
-                | { pc_lhs = { ppat_desc = Ppat_var _ }; _ }
+                | { pc_lhs = { ppat_desc = Ppat_var _; _ }; _ }
                 | { pc_lhs = [%pat? _]; _ } -> ()
                 | { pc_lhs; _ } ->
                   raise (Location.Error
@@ -165,4 +166,4 @@ let const_mapper argv =
     process
   }
 
-let () = register "const" const_mapper
+let () = Migrate_parsetree.Driver.register ~name:"const" ocaml_version const_mapper
