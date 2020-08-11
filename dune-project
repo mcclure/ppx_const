@@ -20,7 +20,7 @@ compilation of code.
 ")
   (tags ("syntax"))
   (depends
-    (ocaml (>= 4.02.0))
+    (ocaml (>= 4.04.0))
     (ppxlib (>= 0.9.0))
     (ounit2 :with-test)
     (odoc :with-doc)))
