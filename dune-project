@@ -21,6 +21,6 @@ compilation of code.
   (tags ("syntax"))
   (depends
     (ocaml (>= 4.02.0))
-    ppxlib
+    (ppxlib (>= 0.9.0))
     (ounit2 :with-test)
     (odoc :with-doc)))

@@ -1,5 +1,5 @@
 (library
   (public_name ppx_const)
   (kind ppx_rewriter)
-  (preprocess (action (run ppxfind -legacy ppx_tools.metaquot --as-pp %{input-file})))
-  (libraries ppx_tools ocaml-migrate-parsetree))
+  (preprocess (pps ppxlib.metaquot))
+  (libraries ppxlib))

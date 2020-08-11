@@ -1,9 +1,4 @@
-open Migrate_parsetree.OCaml_411.Ast
-open Ast_mapper
-open Asttypes
-open Parsetree
-
-let ocaml_version = Migrate_parsetree.Versions.ocaml_411
+open Ppxlib
 
 (* Shadow polymorphic equality functions from the standard library to
    avoid future issues *)
@@ -29,7 +24,7 @@ let const_eq x y = match x, y with
       String.equal x y
   | Pconst_char x, Pconst_char y ->
       Char.equal x y
-  | Pconst_string (x, _loc1, _delim1), Pconst_string (y, _loc2, _delim2) ->
+  | Pconst_string (x, _delim1), Pconst_string (y, _delim2) ->
       String.equal x y
   | Pconst_float (x, _suff1), Pconst_float (y, _suff2) ->
       (* Ignore suffixes. It doesn't really matter if they're different types
@@ -51,15 +46,16 @@ let const_expr_eq x y = match x, y with
   | True, _
   | False, _ -> false
 
-let const_mapper _config _cookies =
-  (* Our const_mapper only overrides the handling of expressions in the default mapper. *)
-  { default_mapper with expr =
+let traverse = object
+  inherit Ppxlib.Ast_traverse.map as super
+
+  method! expression =
     (* Create a recursive function and then immediately return it *)
-    let rec process mapper expr =
+    let rec process expr =
       (* Shared error handler used by multiple cases below *)
       let didnt_find_if loc =
-        raise (Location.Error (
-                  Location.error ~loc "[%const] accepts an if statement, e.g. if%const true then 1, or a match statement"))
+        Location.raise_errorf ~loc
+          "[%%const] accepts an if statement, e.g. if%%const true then 1, or a match statement"
       in
       match expr with
       (* Is this an extension node? *)
@@ -67,7 +63,7 @@ let const_mapper _config _cookies =
         begin match pstr with
         | PStr [{ pstr_desc = Pstr_eval (exp,_); _ }] ->
           (* Unpack expression, then recurse to handle internal if%matches and match on result *)
-          begin match process mapper exp with
+          begin match process exp with
             (* Syntax extension 1 -- ifthenelse *)
             | { pexp_loc  = loc;
                 pexp_desc = Pexp_ifthenelse (cond, then_clause, else_opt); _ } ->
@@ -76,8 +72,8 @@ let const_mapper _config _cookies =
                 match x,y with
                 | Pexp_constant x, Pexp_constant y -> op x y
                 | _ ->
-                  raise (Location.Error (
-                      Location.error ~loc:cond.pexp_loc "[%const if...] does not know how to compare these two expressions"))
+                  Location.raise_errorf ~loc:cond.pexp_loc
+                    "[%%const if...] does not know how to compare these two expressions"
               in
               (* Evaluate conditional *)
               let which = match cond with
@@ -88,13 +84,13 @@ let const_mapper _config _cookies =
                 | [%expr [%e? x] <> [%e? y]] ->
                   pairTest x.pexp_desc y.pexp_desc const_neq
                 | _ ->
-                  raise (Location.Error (
-                      Location.error ~loc:cond.pexp_loc "[%const if...] does not know how to interpret this kind of expression"))
+                  Location.raise_errorf ~loc:cond.pexp_loc
+                    "[%%const if...] does not know how to interpret this kind of expression"
               in
               (* Depending on value of conditional, replace self extension node with either the then or else clause contents *)
               if which then then_clause else (match else_opt with Some x -> x | _ ->
                 (* Or, if the else clause is selected but is not specified, a () *)
-                Ast_helper.with_default_loc loc (fun _ -> Ast_convenience.unit ()))
+                Ast_helper.with_default_loc loc (fun _ -> [%expr ()]))
 
             (* Syntax extension 1 -- match *)
             | { pexp_loc = match_loc;
@@ -105,25 +101,22 @@ let const_mapper _config _cookies =
                 | [%expr true] -> True
                 | [%expr false] -> False
                 | _ ->
-                  raise (Location.Error
-                           (Location.error ~loc:match_expr.pexp_loc
-                              "[%const match...] does not know how to interpret this kind of expression"))
+                  Location.raise_errorf ~loc:match_expr.pexp_loc
+                    "[%%const match...] does not know how to interpret this kind of expression"
               in
               (* Syntax-check, bar "when" *)
               let check_case (case : case)  = match case with
                 | { pc_guard = Some guard; _ } ->
-                  raise (Location.Error
-                           (Location.error ~loc:guard.pexp_loc
-                              "[%const match...] Guards are not allowed in match%const"))
+                  Location.raise_errorf ~loc:guard.pexp_loc
+                    "[%%const match...] Guards are not allowed in match%%const"
                 | { pc_lhs = { ppat_desc = Ppat_constant _; _ }; _ }
                 | { pc_lhs = [%pat? true]; _ }
                 | { pc_lhs = [%pat? false]; _ }
                 | { pc_lhs = { ppat_desc = Ppat_var _; _ }; _ }
                 | { pc_lhs = [%pat? _]; _ } -> ()
                 | { pc_lhs; _ } ->
-                  raise (Location.Error
-                           (Location.error ~loc:pc_lhs.ppat_loc
-                              "[%const match...] Bad pattern in match%const")) in
+                  Location.raise_errorf ~loc:pc_lhs.ppat_loc
+                    "[%%const match...] Bad pattern in match%%const" in
               let () = List.iter check_case cases in
               (* Evaluate match, check | expressions one by one *)
               let rec find_match cases = match cases with
@@ -146,13 +139,11 @@ let const_mapper _config _cookies =
                     | [%pat? true] -> handle_const True
                     | [%pat? false] -> handle_const False
                     | _ ->
-                      raise (Location.Error
-                               (Location.error ~loc:case.pc_lhs.ppat_loc
-                                  "[%const match] Bad pattern"))
+                      Location.raise_errorf ~loc:case.pc_lhs.ppat_loc
+                        "[%%const match] Bad pattern"
                   end
-                | [] -> raise (Location.Error
-                                 (Location.error ~loc:match_loc
-                                    "[%const match...] No match case succeeded!"))
+                | [] -> Location.raise_errorf ~loc:match_loc
+                          "[%%const match...] No match case succeeded!"
               in find_match cases
             (* Failed to match Pexp_ifthenelse, so fail *)
             | _ -> didnt_find_if loc
@@ -161,9 +152,9 @@ let const_mapper _config _cookies =
         | _ -> didnt_find_if loc
         end
       (* Failed to match Pexp_extension, so hand this off to the default mapper. *)
-      | x -> default_mapper.expr mapper x;
+      | expr -> super#expression expr
     in
     process
-  }
+end
 
-let () = Migrate_parsetree.Driver.register ~name:"const" ocaml_version const_mapper
+let () = Ppxlib.Driver.register_transformation ~impl:traverse#structure "const"
