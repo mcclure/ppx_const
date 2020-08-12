@@ -54,6 +54,10 @@ For this to work, you'll need to make **certain** that ppx\_getenv runs before p
 
     <*>: package(ppx_getenv, ppx_const)
 
+With dune, the order does not matter, ppx\_getenv will always be executed before ppx\_const due to the nature of their respective ppxlib driver:
+
+    (preprocess (pps ppx_getenv ppx_const))
+
 In this example, when you build, if the `BUILD_OMIT_GRAPH` environment variable is set to a nonempty string then the `Graph.create` call will be omitted entirely from the compiled binary. If this is the only invocation of Graph, then the Graph module and all its dependencies will also be omitted from the binary. If you do not set this environment variable, the `[%getenv` check will become an empty string at build time and the graph function will be included.
 
 License

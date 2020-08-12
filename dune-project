@@ -2,6 +2,7 @@
 (name ppx_const)
 (version 2.0)
 
+(allow_approximate_merlin)
 (generate_opam_files true)
 
 (maintainers "Andi McClure <andi.m.mcclure@gmail.com>")
@@ -23,4 +24,5 @@ compilation of code.
     (ocaml (>= 4.04.0))
     (ppxlib (>= 0.9.0))
     (ounit2 :with-test)
+    (ppx_getenv (and :with-test (>= 2.0)))
     (odoc :with-doc)))
