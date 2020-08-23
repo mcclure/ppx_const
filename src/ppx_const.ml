@@ -1,7 +1,8 @@
 open Ppxlib
 
-(* Shadow polymorphic equality functions from the standard library to
-   avoid future issues *)
+(* Shadow polymorphic equality functions from the standard library to avoid
+   future issues. We can be sure these will never be called because
+   of the unit->unit type signatures. *)
 let (=) : unit -> unit -> bool = (=)
 let (<>) : unit -> unit -> bool = (=)
 let (>) : unit -> unit -> bool = (=)

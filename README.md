@@ -5,7 +5,9 @@ This is an OCaml language extension implementing `if%const` and `match%const` st
 
 In other words, ppx\_const works like `#if` in the C preprocessor, but is implemented entirely within the OCaml language using the [ppx](http://whitequark.org/blog/2014/04/16/a-guide-to-extension-points-in-ocaml/) mechanism. In conjunction with [ppx_getenv](https://github.com/whitequark/ppx_getenv), this provides a lightweight alternative to Cppo.
 
-This software was written by Andi McClure <<andi.m.mcclure@gmail.com>> based on whitequark's ppx\_getenv sample. Because it is based on ppx, it requires OCaml 4.02.
+This software was written by Andi McClure <<andi.m.mcclure@gmail.com>>, based on whitequark's ppx\_getenv sample. Significant upgrades were contributed by Kate Deplaix.
+
+Because ppx\_const is based on ppx, it requires OCaml 4.02 or newer.
 
 Usage
 -----
@@ -50,15 +52,11 @@ Say your program has a Graph module with heavyweight dependencies (cairo or what
     else
         print_endline "Graph feature not available."
 
-For this to work, you'll need to make **certain** that ppx\_getenv runs before ppx\_const, so that `if%const` sees a constant string and not the `[%` node. In ocamlbuild, you do this by ordering them like this in your `_tags` file:
+In this example, when you build, if the `BUILD_OMIT_GRAPH` environment variable is set to a nonempty string then the `Graph.create` call will be omitted entirely from the compiled binary. If this is the only invocation of Graph, then the Graph module and all its dependencies will also be omitted from the binary. If you do not set this environment variable, the `[%getenv` check will become an empty string at build time and the graph function will be included.
+
+**OCamlbuild users take note:** For this example to work, you'll need to make **certain** that ppx\_getenv runs before ppx\_const, so that `if%const` sees a constant string and not the `[%` node. If you are using Dune, then Dune will take care of this for you. In OCamlbuild, you set a load order by ordering the packages like this in your `_tags` file:
 
     <*>: package(ppx_getenv, ppx_const)
-
-With dune, the order does not matter, ppx\_getenv will always be executed before ppx\_const due to the nature of their respective ppxlib driver:
-
-    (preprocess (pps ppx_getenv ppx_const))
-
-In this example, when you build, if the `BUILD_OMIT_GRAPH` environment variable is set to a nonempty string then the `Graph.create` call will be omitted entirely from the compiled binary. If this is the only invocation of Graph, then the Graph module and all its dependencies will also be omitted from the binary. If you do not set this environment variable, the `[%getenv` check will become an empty string at build time and the graph function will be included.
 
 License
 -------
