@@ -1,0 +1,13 @@
+(test
+  (name test_ppx_const)
+  (preprocess (pps ppx_const))
+  (modules test_ppx_const)
+  (libraries ounit2))
+
+(env (_ (env-vars (PPX_GETENV_CHECK 42))))
+
+(test
+  (name test_compose_ppx_getenv)
+  (preprocess (pps ppx_getenv ppx_const))
+  (modules test_compose_ppx_getenv)
+  (libraries ounit2))

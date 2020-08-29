@@ -1,3 +1,0 @@
-version = "%{version}%"
-description = "Compile-time \"if\" and \"match\" statements for conditional inclusion of code."
-ppx = "./ppx_const"
