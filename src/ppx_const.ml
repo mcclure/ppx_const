@@ -25,7 +25,7 @@ let const_eq x y = match x, y with
       String.equal x y
   | Pconst_char x, Pconst_char y ->
       Char.equal x y
-  | Pconst_string (x, _delim1), Pconst_string (y, _delim2) ->
+  | Pconst_string (x, _, _delim1), Pconst_string (y, _, _delim2) ->
       String.equal x y
   | Pconst_float (x, _suff1), Pconst_float (y, _suff2) ->
       (* Ignore suffixes. It doesn't really matter if they're different types
