@@ -11,10 +11,10 @@
 (source (github mcclure/ppx_const))
 (package
   (name ppx_const)
-  (synopsis "Compile-time \"if\" statement for conditional inclusion of code.")
+  (synopsis "Compile-time \"if\" statement for conditional inclusion of code")
   (description "\
 This is a ppx extension which adds `if#const` and `match#const` constructs to
-OCaml. They behave like normal `if` and `const`, but conditions are evaluated
+OCaml. They behave like normal `if` and `match`, but conditions are evaluated
 at compile time and AST sections not selected are excluded from the program
 completely. In conjunction with ppx_getenv, this can be used for conditional
 compilation of code.
@@ -22,7 +22,7 @@ compilation of code.
   (tags ("syntax"))
   (depends
     (ocaml (>= 4.04.0))
-    (ppxlib (>= 0.9.0))
+    (ppxlib (>= 0.18.0))
     (ounit2 :with-test)
     (ppx_getenv (and :with-test (>= 2.0)))
     (odoc :with-doc)))
