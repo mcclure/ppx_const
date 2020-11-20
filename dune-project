@@ -1,6 +1,6 @@
 (lang dune 2.0)
 (name ppx_const)
-(version 2.0)
+(version 2.0.1)
 
 (allow_approximate_merlin)
 (generate_opam_files true)
